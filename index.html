@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>청소당번 랜덤 추첨기</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #dbeafe, #f5e8ff);
+    font-family: 'Malgun Gothic', sans-serif;
+  }
+
+  .container {
+    width: 92%;
+    max-width: 700px;
+    background: white;
+    padding: 40px 30px;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+  }
+
+  h1 {
+    margin: 0 0 12px;
+    font-size: 32px;
+    color: #273449;
+  }
+
+  .description {
+    color: #64748b;
+    margin-bottom: 35px;
+  }
+
+  .numbers {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 30px;
+  }
+
+  .number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+    background: #eff6ff;
+    border: 2px solid #bfdbfe;
+    border-radius: 16px;
+    font-size: 35px;
+    font-weight: bold;
+    color: #2563eb;
+    transition: 0.2s;
+  }
+
+  .number.selected {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+    animation: pop 0.4s ease;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.7); }
+    60% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+
+  button {
+    border: none;
+    border-radius: 12px;
+    padding: 15px 28px;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 5px;
+  }
+
+  #drawBtn {
+    background: #2563eb;
+    color: white;
+  }
+
+  #drawBtn:hover {
+    background: #1d4ed8;
+  }
+
+  #resetBtn {
+    background: #e2e8f0;
+    color: #334155;
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  #message {
+    margin-top: 24px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #16a34a;
+    min-height: 25px;
+  }
+
+  @media (max-width: 500px) {
+    .container { padding: 30px 15px; }
+    h1 { font-size: 25px; }
+    .numbers { gap: 6px; }
+    .number { height: 65px; font-size: 24px; }
+    button { padding: 13px 18px; font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🧹 오늘의 청소당번</h1>
+  <p class="description">
+    1번부터 30번 중 행운의 5명을 뽑아보세요!
+  </p>
+
+  <div class="numbers" id="numbers">
+    <div class="number">?</div>
+    <div class="number">?</div>
+    <div class="number">?</div>
+    <div class="number">?</div>
+    <div class="number">?</div>
+  </div>
+
+  <button id="drawBtn" onclick="drawStudents()">
+    🎲 청소당번 추첨하기
+  </button>
+
+  <button id="resetBtn" onclick="resetDraw()">
+    ↻ 초기화
+  </button>
+
+  <div id="message" aria-live="polite"></div>
+</div>
+
+<script>
+  const cards = document.querySelectorAll('.number');
+  const drawBtn = document.getElementById('drawBtn');
+  const message = document.getElementById('message');
+
+  let drawing = false;
+  let animationTimer = null;
+
+  function drawStudents() {
+    if (drawing) return;
+    drawing = true;
+    drawBtn.disabled = true;
+    message.textContent = '두근두근! 추첨 중...';
+
+    cards.forEach(card => {
+      card.classList.remove('selected');
+    });
+
+    // 1부터 30까지 번호 생성
+    const students = Array.from(
+      { length: 30 },
+      (_, i) => i + 1
+    );
+
+    // Fisher-Yates 셔플로 무작위 섞기
+    for (let i = students.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [students[i], students[j]] =
+        [students[j], students[i]];
+    }
+
+    // 중복 없이 5명 선정 후 번호순 정렬
+    const winners = students
+      .slice(0, 5)
+      .sort((a, b) => a - b);
+
+    // 추첨 애니메이션
+    let ticks = 0;
+
+    animationTimer = setInterval(() => {
+      cards.forEach(card => {
+        card.textContent =
+          Math.floor(Math.random() * 30) + 1;
+      });
+
+      ticks++;
+
+      if (ticks >= 20) {
+        clearInterval(animationTimer);
+        animationTimer = null;
+
+        cards.forEach((card, index) => {
+          card.textContent = winners[index];
+          card.classList.add('selected');
+        });
+
+        message.textContent =
+          '🎉 청소당번 5명이 선정되었습니다!';
+
+        drawBtn.textContent = '🎲 다시 추첨하기';
+        drawBtn.disabled = false;
+        drawing = false;
+      }
+    }, 80);
+  }
+
+  function resetDraw() {
+    if (animationTimer !== null) {
+      clearInterval(animationTimer);
+      animationTimer = null;
+    }
+
+    cards.forEach(card => {
+      card.textContent = '?';
+      card.classList.remove('selected');
+    });
+
+    message.textContent = '';
+    drawBtn.textContent = '🎲 청소당번 추첨하기';
+    drawBtn.disabled = false;
+    drawing = false;
+  }
+</script>
+
+</body>
+</html>
